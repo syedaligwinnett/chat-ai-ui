@@ -16,9 +16,9 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
-        
+
         try {
-            const res = await axios.post("http://localhost:3001/auth/login", { email, password });
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, { email, password });
             if (res.data.token) {
                 localStorage.setItem("token", res.data.token);
                 router.push("/chat");
@@ -34,9 +34,9 @@ export default function LoginPage() {
             {/* Background animated gradients */}
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full animate-pulse" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full animate-pulse delay-1000" />
-            
+
             <div className="relative z-10 w-full max-w-[420px] p-8 sm:p-10 bg-[#111111]/80 backdrop-blur-2xl border border-white/5 rounded-[24px] shadow-2xl mx-4">
-                
+
                 {/* Decorative top gradient border line */}
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-80" />
 
