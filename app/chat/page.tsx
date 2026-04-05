@@ -130,13 +130,13 @@ export default function ChatPage() {
                     </div>
 
                     {/* Sign up banner on the left bottom */}
-                    <div className="p-4 flex flex-col gap-3">
+                    {/* <div className="p-4 flex flex-col gap-3">
                         <div className="text-[14px] font-semibold text-gray-800">Get responses tailored to you</div>
                         <div className="text-[13px] text-gray-500 leading-snug">Log in to get answers based on saved chats, plus create images and upload files.</div>
                         <button className="w-full py-2 bg-white border border-[#e5e5e5] rounded-full font-medium text-[14px] text-gray-800 hover:bg-gray-50 transition-colors mt-1">
                             Log in
                         </button>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
