@@ -146,7 +146,7 @@ export default function ChatPage() {
                 <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-10">
                     <div className="flex items-center">
                         <button className="flex items-center gap-1 text-[18px] font-bold text-[#0f0f0f] hover:bg-gray-100 rounded-lg px-2 py-1 transition-colors">
-                            ChatGPT
+                            Gwinnett Psychiatry - AI Assistant
                             <ChevronDown className="w-[18px] h-[18px] text-gray-500 ml-1" strokeWidth={2.5} />
                         </button>
                     </div>
