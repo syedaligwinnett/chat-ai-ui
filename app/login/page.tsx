@@ -74,8 +74,8 @@ export default function LoginPage() {
 
                     <div className="space-y-2 group">
                         <div className="flex items-center justify-between ml-1">
-                            <label className="text-[13px] font-medium text-gray-300">Password</label>
-                            <a href="#" className="text-[13px] font-medium text-blue-400 hover:text-blue-300 transition-colors">Forgot password?</a>
+                            {/* <label className="text-[13px] font-medium text-gray-300">Password</label>
+                            <a href="#" className="text-[13px] font-medium text-blue-400 hover:text-blue-300 transition-colors">Forgot password?</a> */}
                         </div>
                         <div className="relative flex items-center">
                             <Lock className="absolute left-4 w-5 h-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
@@ -109,12 +109,12 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-8 text-center">
-                    <p className="text-[14px] text-gray-400 font-medium">
+                    {/* <p className="text-[14px] text-gray-400 font-medium">
                         Don't have an account?{" "}
                         <a href="#" className="font-semibold text-white hover:text-blue-400 transition-colors">
                             Sign up for free
                         </a>
-                    </p>
+                    </p> */}
                 </div>
             </div>
         </div>
