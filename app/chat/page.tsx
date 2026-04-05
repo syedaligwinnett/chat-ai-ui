@@ -51,6 +51,7 @@ export default function ChatPage() {
         const token = localStorage.getItem("token");
         const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chat/send`, formData, {
             headers: {
+                "Content-Type": "multipart/form-data",
                 Authorization: `Bearer ${token}`,
             },
         });
