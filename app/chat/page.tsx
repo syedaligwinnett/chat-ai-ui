@@ -20,13 +20,15 @@ import {
     Sparkles,
     Send,
     Copy,
-    Check
+    Check,
+    Loader2
 } from "lucide-react";
 
 export default function ChatPage() {
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState("");
     const [files, setFiles] = useState<File[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -73,6 +75,7 @@ export default function ChatPage() {
             });
         }
 
+        setIsProcessing(true);
         try {
             const token = localStorage.getItem("token");
             const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chat/send`, formData, {
@@ -82,11 +85,12 @@ export default function ChatPage() {
                 },
             });
 
-            const botMessage = { role: "bot", text: res.data.reply };
+            const botMessage = { role: "bot", text: res.data.reply, isNew: true };
             setMessages((prev) => [...prev, botMessage]);
         } catch (error) {
             console.error("Error sending message:", error);
-            // Optionally handle error (e.g., show error message in chat)
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -199,10 +203,20 @@ export default function ChatPage() {
                         <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
                     ) : (
                         <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
-                            {messages.map((msg, i) => (
-                                <ChatBubble key={i} msg={msg} />
-                            ))}
-                        </div>
+                                {messages.map((msg, i) => (
+                                    <ChatBubble key={i} msg={msg} />
+                                ))}
+                                {isProcessing && (
+                                    <div className="flex items-center gap-3 p-4 rounded-2xl max-w-xl bg-white border border-[#e5e5e5] text-gray-500 rounded-tl-none shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <div className="flex space-x-1">
+                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></div>
+                                        </div>
+                                        <span className="text-[13px] font-medium text-gray-400">Gwinnett AI is typing...</span>
+                                    </div>
+                                )}
+                            </div>
                     )}
 
                     <div className={`w-full max-w-[800px] ${messages.length > 0 ? "mx-auto sticky bottom-0 pb-2 pt-2 shrink-0 bg-white" : ""}`}>
@@ -275,13 +289,17 @@ function ChatBubble({ msg }: { msg: any }) {
 
     return (
         <div
-            className={`group relative p-4 rounded-2xl max-w-[85%] md:max-w-xl shadow-sm transition-all ${msg.role === "user"
+            className={`group relative p-4 rounded-2xl max-w-[85%] md:max-w-xl shadow-sm transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === "user"
                 ? "bg-[#007AFF] ml-auto text-white rounded-tr-none"
                 : "bg-white border border-[#e5e5e5] text-[#0f0f0f] rounded-tl-none"
                 }`}
         >
             <div className={`prose prose-sm max-w-none ${msg.role === "user" ? "prose-invert" : ""}`}>
-                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                {msg.role === "bot" && msg.isNew ? (
+                    <Typewriter text={msg.text} onComplete={() => { msg.isNew = false; }} />
+                ) : (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                )}
             </div>
 
             <button
@@ -297,4 +315,23 @@ function ChatBubble({ msg }: { msg: any }) {
             </button>
         </div>
     );
+}
+
+function Typewriter({ text, onComplete }: { text: string; onComplete?: () => void }) {
+    const [displayText, setDisplayText] = useState("");
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (index < text.length) {
+            const timeout = setTimeout(() => {
+                setDisplayText((prev) => prev + text.charAt(index));
+                setIndex((prev) => prev + 1);
+            }, 10); // Speed of typing
+            return () => clearTimeout(timeout);
+        } else if (onComplete) {
+            onComplete();
+        }
+    }, [index, text, onComplete]);
+
+    return <ReactMarkdown>{displayText}</ReactMarkdown>;
 }
