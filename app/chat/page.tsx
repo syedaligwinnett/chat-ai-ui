@@ -194,16 +194,16 @@ export default function ChatPage() {
                 </div>
 
                 {/* Content Area */}
-                    <div className={`flex-1 flex flex-col ${messages.length === 0 ? "items-center justify-center pb-[10vh]" : ""} overflow-y-auto px-4`}>
-                        {messages.length === 0 ? (
-                            <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
-                        ) : (
-                            <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
-                                {messages.map((msg, i) => (
-                                    <ChatBubble key={i} msg={msg} />
-                                ))}
-                            </div>
-                        )}
+                <div className={`flex-1 flex flex-col ${messages.length === 0 ? "items-center justify-center pb-[10vh]" : ""} overflow-y-auto px-4`}>
+                    {messages.length === 0 ? (
+                        <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
+                    ) : (
+                        <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
+                            {messages.map((msg, i) => (
+                                <ChatBubble key={i} msg={msg} />
+                            ))}
+                        </div>
+                    )}
 
                     <div className={`w-full max-w-[800px] ${messages.length > 0 ? "mx-auto sticky bottom-0 pb-2 pt-2 shrink-0 bg-white" : ""}`}>
                         <div className="flex items-center bg-[#f4f4f4] rounded-[24px] px-3 py-3 border border-transparent focus-within:bg-white focus-within:shadow-[0_2px_15px_rgba(0,0,0,0.08)] focus-within:border-[#e5e5e5] transition-all duration-200">
@@ -286,8 +286,8 @@ function ChatBubble({ msg }: { msg: any }) {
 
             <button
                 onClick={handleCopy}
-                className={`absolute ${msg.role === "user" ? "-left-12" : "-right-12"} top-1 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all duration-200 text-gray-500`}
-                title="Copy message"
+                className={`absolute ${msg.role === "user" ? "-left-12" : "-right-12"} top-1 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all duration-200 text-gray-500 cursor-pointer`}
+                title="Copy this text"
             >
                 {copied ? (
                     <Check className="w-4 h-4 text-green-500" />
