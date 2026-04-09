@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -26,6 +26,19 @@ export default function ChatPage() {
     const [input, setInput] = useState("");
     const [files, setFiles] = useState<File[]>([]);
     const router = useRouter();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        adjustHeight();
+    }, [input]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -61,6 +74,9 @@ export default function ChatPage() {
         setMessages((prev) => [...prev, botMessage]);
         setInput("");
         setFiles([]);
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+        }
     };
 
     return (
@@ -206,12 +222,21 @@ export default function ChatPage() {
                                     }}
                                 />
                             </label>
-                            <input
-                                type="text"
+                            <textarea
+                                ref={textareaRef}
+                                rows={1}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (input.trim()) {
+                                            sendMessage();
+                                        }
+                                    }
+                                }}
                                 placeholder="Ask anything"
-                                className="flex-1 bg-transparent border-none outline-none px-2 text-[16px] text-black placeholder:text-gray-500"
+                                className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-[16px] text-black placeholder:text-gray-500 resize-none max-h-[200px] overflow-y-auto"
                             />
                             <button onClick={sendMessage} disabled={!input.trim()} className="pl-3 pr-4 py-2 mr-1 bg-black text-white border border-transparent rounded-full flex items-center justify-center shadow-sm hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed">
                                 <span className="text-[14px] font-medium">Submit</span>
