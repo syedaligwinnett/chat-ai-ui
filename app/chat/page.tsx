@@ -48,34 +48,43 @@ export default function ChatPage() {
     }, [router]);
 
     const sendMessage = async () => {
-        if (!input) return;
+        if (!input.trim()) return;
 
-        const userMessage = { role: "user", text: input };
+        const currentInput = input;
+        const currentFiles = [...files];
+
+        const userMessage = { role: "user", text: currentInput };
         setMessages((prev) => [...prev, userMessage]);
 
-        const formData = new FormData();
-        formData.append("prompt", input);
-        if (files.length > 0) {
-            files.forEach((f) => {
-                formData.append("files", f);
-            });
-        }
-
-        const token = localStorage.getItem("token");
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chat/send`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        const botMessage = { role: "bot", text: res.data.reply };
-
-        setMessages((prev) => [...prev, botMessage]);
+        // Clear input immediately for better UX
         setInput("");
         setFiles([]);
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
+        }
+
+        const formData = new FormData();
+        formData.append("prompt", currentInput);
+        if (currentFiles.length > 0) {
+            currentFiles.forEach((f) => {
+                formData.append("files", f);
+            });
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chat/send`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const botMessage = { role: "bot", text: res.data.reply };
+            setMessages((prev) => [...prev, botMessage]);
+        } catch (error) {
+            console.error("Error sending message:", error);
+            // Optionally handle error (e.g., show error message in chat)
         }
     };
 
