@@ -321,6 +321,11 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
     const [displayText, setDisplayText] = useState("");
     const [index, setIndex] = useState(0);
 
+    const onCompleteRef = useRef(onComplete);
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
     useEffect(() => {
         if (index < text.length) {
             const timeout = setTimeout(() => {
@@ -328,10 +333,10 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
                 setIndex((prev) => prev + 1);
             }, 10); // Speed of typing
             return () => clearTimeout(timeout);
-        } else if (onComplete) {
-            onComplete();
+        } else if (onCompleteRef.current) {
+            onCompleteRef.current();
         }
-    }, [index, text, onComplete]);
+    }, [index, text]);
 
     return <ReactMarkdown>{displayText}</ReactMarkdown>;
 }
