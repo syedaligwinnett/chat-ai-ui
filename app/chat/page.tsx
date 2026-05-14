@@ -203,20 +203,20 @@ export default function ChatPage() {
                         <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
                     ) : (
                         <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
-                                {messages.map((msg, i) => (
-                                    <ChatBubble key={i} msg={msg} />
-                                ))}
-                                {isProcessing && (
-                                    <div className="flex items-center gap-3 p-4 rounded-2xl max-w-xl bg-white border border-[#e5e5e5] text-gray-500 rounded-tl-none shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
-                                        <div className="flex space-x-1">
-                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></div>
-                                        </div>
-                                        <span className="text-[13px] font-medium text-gray-400">Gwinnett AI is typing...</span>
+                            {messages.map((msg, i) => (
+                                <ChatBubble key={i} msg={msg} />
+                            ))}
+                            {isProcessing && (
+                                <div className="flex items-center gap-3 p-4 rounded-2xl max-w-xl bg-white border border-[#e5e5e5] text-gray-500 rounded-tl-none shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                    <div className="flex space-x-1">
+                                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></div>
                                     </div>
-                                )}
-                            </div>
+                                    <span className="text-[13px] font-medium text-gray-400">Gwinnett AI is typing...</span>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     <div className={`w-full max-w-[800px] ${messages.length > 0 ? "mx-auto sticky bottom-0 pb-2 pt-2 shrink-0 bg-white" : ""}`}>
@@ -318,25 +318,20 @@ function ChatBubble({ msg }: { msg: any }) {
 }
 
 function Typewriter({ text, onComplete }: { text: string; onComplete?: () => void }) {
+    const [displayText, setDisplayText] = useState("");
     const [index, setIndex] = useState(0);
-    const onCompleteRef = useRef(onComplete);
-
-    useEffect(() => {
-        onCompleteRef.current = onComplete;
-    }, [onComplete]);
 
     useEffect(() => {
         if (index < text.length) {
             const timeout = setTimeout(() => {
-                // Chunk the text to improve performance and prevent rendering bottlenecks
-                const chunkSize = Math.max(1, Math.floor(text.length / 150));
-                setIndex((prev) => Math.min(prev + chunkSize, text.length));
-            }, 15); // Speed of typing
+                setDisplayText((prev) => prev + text.charAt(index));
+                setIndex((prev) => prev + 1);
+            }, 10); // Speed of typing
             return () => clearTimeout(timeout);
-        } else if (onCompleteRef.current) {
-            onCompleteRef.current();
+        } else if (onComplete) {
+            onComplete();
         }
-    }, [index, text.length]);
+    }, [index, text, onComplete]);
 
-    return <ReactMarkdown>{text.substring(0, index)}</ReactMarkdown>;
+    return <ReactMarkdown>{displayText}</ReactMarkdown>;
 }
