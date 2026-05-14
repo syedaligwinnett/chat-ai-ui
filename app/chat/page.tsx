@@ -44,6 +44,17 @@ export default function ChatPage() {
         adjustHeight();
     }, [input]);
 
+    const scrollToBottom = () => {
+        const container = document.getElementById("chat-scroll-container");
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isProcessing]);
+
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -198,7 +209,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Content Area */}
-                <div className={`flex-1 flex flex-col ${messages.length === 0 ? "items-center justify-center pb-[10vh]" : ""} overflow-y-auto px-4`}>
+                <div id="chat-scroll-container" className={`flex-1 flex flex-col ${messages.length === 0 ? "items-center justify-center pb-[10vh]" : ""} overflow-y-auto px-4 scroll-smooth`}>
                     {messages.length === 0 ? (
                         <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
                     ) : (
@@ -327,6 +338,12 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
     }, [onComplete]);
 
     useEffect(() => {
+        // Scroll to bottom as new characters are typed
+        const container = document.getElementById("chat-scroll-container");
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+
         if (index < text.length) {
             const timeout = setTimeout(() => {
                 setDisplayText((prev) => prev + text.charAt(index));
