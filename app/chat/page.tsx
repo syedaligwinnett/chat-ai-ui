@@ -318,20 +318,25 @@ function ChatBubble({ msg }: { msg: any }) {
 }
 
 function Typewriter({ text, onComplete }: { text: string; onComplete?: () => void }) {
-    const [displayText, setDisplayText] = useState("");
     const [index, setIndex] = useState(0);
+    const onCompleteRef = useRef(onComplete);
+
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     useEffect(() => {
         if (index < text.length) {
             const timeout = setTimeout(() => {
-                setDisplayText((prev) => prev + text.charAt(index));
-                setIndex((prev) => prev + 1);
-            }, 10); // Speed of typing
+                // Chunk the text to improve performance and prevent rendering bottlenecks
+                const chunkSize = Math.max(1, Math.floor(text.length / 150));
+                setIndex((prev) => Math.min(prev + chunkSize, text.length));
+            }, 15); // Speed of typing
             return () => clearTimeout(timeout);
-        } else if (onComplete) {
-            onComplete();
+        } else if (onCompleteRef.current) {
+            onCompleteRef.current();
         }
-    }, [index, text, onComplete]);
+    }, [index, text.length]);
 
-    return <ReactMarkdown>{displayText}</ReactMarkdown>;
+    return <ReactMarkdown>{text.substring(0, index)}</ReactMarkdown>;
 }
