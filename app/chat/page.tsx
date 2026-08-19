@@ -345,10 +345,12 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
         }
 
         if (index < text.length) {
+            // Speed up typing for longer AI responses so user doesn't wait indefinitely
+            const step = text.length > 3000 ? 8 : (text.length > 1500 ? 4 : (text.length > 500 ? 2 : 1));
             const timeout = setTimeout(() => {
-                setDisplayText((prev) => prev + text.charAt(index));
-                setIndex((prev) => prev + 1);
-            }, 10); // Speed of typing
+                setDisplayText((prev) => prev + text.substring(index, index + step));
+                setIndex((prev) => prev + step);
+            }, 10);
             return () => clearTimeout(timeout);
         } else if (onCompleteRef.current) {
             onCompleteRef.current();
