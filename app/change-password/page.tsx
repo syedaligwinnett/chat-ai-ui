@@ -63,7 +63,7 @@ export default function ChangePasswordPage() {
                     <label className="block space-y-2 text-sm font-medium">Current password<input className={inputClass} type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></label>
                     <label className="block space-y-2 text-sm font-medium">New password<input className={inputClass} type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /><span className="block text-xs font-normal text-gray-500">Use at least 8 characters.</span></label>
                     <label className="block space-y-2 text-sm font-medium">Confirm new password<input className={inputClass} type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></label>
-                    <button type="submit" disabled={loading} className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Updating…" : "Update password"}</button>
+                    <button type="submit" disabled={loading} className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Updating..." : "Update password"}</button>
                 </form>
             </section>
         </main>
