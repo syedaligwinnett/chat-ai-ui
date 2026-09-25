@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Lock, ArrowRight, ActivitySquare } from "lucide-react";
+import { Mail, Lock, ArrowRight, ActivitySquare, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const router = useRouter();
@@ -65,10 +66,11 @@ export default function LoginPage() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-[44px] pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[15px] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
+                                className="w-full pl-[44px] pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[15px] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
                                 placeholder="name@company.com"
                                 required
                             />
+                            
                         </div>
                     </div>
 
@@ -80,13 +82,16 @@ export default function LoginPage() {
                         <div className="relative flex items-center">
                             <Lock className="absolute left-4 w-5 h-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-[44px] pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[15px] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
+                                className="w-full pl-[44px] pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-[15px] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
                                 placeholder="••••••••"
                                 required
                             />
+                            <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 text-gray-500 hover:text-gray-300">
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            </button>
                         </div>
                     </div>
 
