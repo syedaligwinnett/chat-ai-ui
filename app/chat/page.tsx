@@ -161,7 +161,7 @@ export default function ChatPage() {
                             <Sparkles className="w-[18px] h-[18px] text-gray-700" />
                             See plans and pricing
                         </button>
-                        <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/50 text-[14px] font-medium text-gray-800 transition-colors">
+                        <button onClick={() => router.push("/change-password")} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/50 text-[14px] font-medium text-gray-800 transition-colors">
                             <Settings className="w-[18px] h-[18px] text-gray-700" />
                             Settings
                         </button>
