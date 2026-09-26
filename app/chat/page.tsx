@@ -19,6 +19,7 @@ import {
     PanelLeftClose,
     Sparkles,
     Send,
+    Square,
     Copy,
     Check,
     Loader2
@@ -29,8 +30,11 @@ export default function ChatPage() {
     const [input, setInput] = useState("");
     const [files, setFiles] = useState<File[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [typingMessageId, setTypingMessageId] = useState<number | null>(null);
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const nextMessageIdRef = useRef(0);
 
     const adjustHeight = () => {
         const textarea = textareaRef.current;
@@ -63,6 +67,13 @@ export default function ChatPage() {
     }, [router]);
 
     const sendMessage = async () => {
+        if (isProcessing) {
+            abortControllerRef.current?.abort();
+            abortControllerRef.current = null;
+            setTypingMessageId(null);
+            setIsProcessing(false);
+            return;
+        }
         if (!input.trim()) return;
 
         const currentInput = input;
@@ -87,6 +98,9 @@ export default function ChatPage() {
         }
 
         setIsProcessing(true);
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        let responseIsTyping = false;
         try {
             const token = localStorage.getItem("token");
             const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chat/send`, formData, {
@@ -94,15 +108,35 @@ export default function ChatPage() {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
                 },
+                signal: controller.signal,
             });
 
-            const botMessage = { role: "bot", text: res.data.reply, isNew: true };
+            if (controller.signal.aborted) return;
+            const messageId = nextMessageIdRef.current++;
+            const botMessage = { role: "bot", text: res.data.reply, isNew: true, id: messageId };
+            responseIsTyping = true;
             setMessages((prev) => [...prev, botMessage]);
+            setTypingMessageId(messageId);
         } catch (error) {
-            console.error("Error sending message:", error);
+            if (!controller.signal.aborted) {
+                console.error("Error sending message:", error);
+                setIsProcessing(false);
+            }
         } finally {
-            setIsProcessing(false);
+            if (!responseIsTyping && abortControllerRef.current === controller) {
+                setIsProcessing(false);
+                abortControllerRef.current = null;
+            }
         }
+    };
+
+    const finishTyping = (messageId: number) => {
+        setMessages((prev) => prev.map((message) =>
+            message.id === messageId ? { ...message, isNew: false } : message
+        ));
+        setTypingMessageId(null);
+        setIsProcessing(false);
+        abortControllerRef.current = null;
     };
 
     return (
@@ -215,7 +249,12 @@ export default function ChatPage() {
                     ) : (
                         <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
                             {messages.map((msg, i) => (
-                                <ChatBubble key={i} msg={msg} />
+                                <ChatBubble
+                                    key={i}
+                                    msg={msg}
+                                    isTyping={typingMessageId === msg.id}
+                                    onTypingComplete={() => finishTyping(msg.id)}
+                                />
                             ))}
                             {isProcessing && (
                                 <div className="flex items-center gap-3 p-4 rounded-2xl max-w-xl bg-white border border-[#e5e5e5] text-gray-500 rounded-tl-none shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
@@ -266,9 +305,12 @@ export default function ChatPage() {
                                 placeholder="Ask anything"
                                 className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-[16px] text-black placeholder:text-gray-500 resize-none max-h-[200px] overflow-y-auto"
                             />
-                            <button onClick={sendMessage} disabled={!input.trim()} className="pl-3 pr-4 py-2 mr-1 bg-black text-white border border-transparent rounded-full flex items-center justify-center shadow-sm hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed">
-                                <span className="text-[14px] font-medium">Submit</span>
-                                <Send className="w-[16px] h-[16px]" />
+                            <button onClick={sendMessage} disabled={!isProcessing && !input.trim()} aria-label={isProcessing ? "Stop response" : "Submit message"} className="pl-3 pr-4 py-2 mr-1 bg-black text-white border border-transparent rounded-full flex items-center justify-center shadow-sm hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed">
+                                {isProcessing ? (
+                                    <><span className="text-[14px] font-medium">Stop</span><Square className="w-[14px] h-[14px] fill-current" /></>
+                                ) : (
+                                    <><span className="text-[14px] font-medium">Submit</span><Send className="w-[16px] h-[16px]" /></>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -285,7 +327,7 @@ export default function ChatPage() {
     );
 }
 
-function ChatBubble({ msg }: { msg: any }) {
+function ChatBubble({ msg, isTyping, onTypingComplete }: { msg: any; isTyping: boolean; onTypingComplete: () => void }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -307,7 +349,7 @@ function ChatBubble({ msg }: { msg: any }) {
         >
             <div className={`prose prose-sm max-w-none ${msg.role === "user" ? "prose-invert" : ""}`}>
                 {msg.role === "bot" && msg.isNew ? (
-                    <Typewriter text={msg.text} onComplete={() => { msg.isNew = false; }} />
+                    <Typewriter text={msg.text} active={isTyping} onComplete={onTypingComplete} />
                 ) : (
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                 )}
@@ -328,7 +370,7 @@ function ChatBubble({ msg }: { msg: any }) {
     );
 }
 
-function Typewriter({ text, onComplete }: { text: string; onComplete?: () => void }) {
+function Typewriter({ text, active, onComplete }: { text: string; active: boolean; onComplete?: () => void }) {
     const [displayText, setDisplayText] = useState("");
     const [index, setIndex] = useState(0);
 
@@ -344,7 +386,7 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
             container.scrollTop = container.scrollHeight;
         }
 
-        if (index < text.length) {
+        if (active && index < text.length) {
             // Speed up typing for longer AI responses so user doesn't wait indefinitely
             const step = text.length > 3000 ? 8 : (text.length > 1500 ? 4 : (text.length > 500 ? 2 : 1));
             const timeout = setTimeout(() => {
@@ -352,10 +394,10 @@ function Typewriter({ text, onComplete }: { text: string; onComplete?: () => voi
                 setIndex((prev) => prev + step);
             }, 10);
             return () => clearTimeout(timeout);
-        } else if (onCompleteRef.current) {
+        } else if (active && onCompleteRef.current) {
             onCompleteRef.current();
         }
-    }, [index, text]);
+    }, [active, index, text]);
 
     return <ReactMarkdown>{displayText}</ReactMarkdown>;
 }
