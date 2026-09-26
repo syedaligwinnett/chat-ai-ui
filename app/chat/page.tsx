@@ -33,6 +33,7 @@ export default function ChatPage() {
     const [typingMessageId, setTypingMessageId] = useState<number | null>(null);
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const nextMessageIdRef = useRef(0);
 
@@ -139,6 +140,22 @@ export default function ChatPage() {
         abortControllerRef.current = null;
     };
 
+    const startNewChat = () => {
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
+        setMessages([]);
+        setInput("");
+        setFiles([]);
+        setTypingMessageId(null);
+        setIsProcessing(false);
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
     return (
         <div className="flex h-screen bg-white text-[#0f0f0f] font-sans antialiased">
             {/* Sidebar */}
@@ -158,7 +175,7 @@ export default function ChatPage() {
 
                     {/* Top menu items */}
                     <div className="flex flex-col gap-1 px-3">
-                        <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/50 text-[14px] font-medium text-gray-800 transition-colors">
+                        <button onClick={startNewChat} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200/50 text-[14px] font-medium text-gray-800 transition-colors">
                             <SquarePen className="w-[18px] h-[18px] text-gray-700" />
                             New chat
                         </button>
@@ -279,6 +296,7 @@ export default function ChatPage() {
                                     </div>
                                 )}
                                 <input
+                                    ref={fileInputRef}
                                     type="file"
                                     multiple
                                     className="hidden"
