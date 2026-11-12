@@ -22,7 +22,15 @@ import {
     Square,
     Copy,
     Check,
-    Loader2
+    Loader2,
+    File as FileIcon,
+    FileArchive,
+    FileCode,
+    FileSpreadsheet,
+    FileText,
+    Film,
+    Music2,
+    X
 } from "lucide-react";
 
 export default function ChatPage() {
@@ -287,22 +295,30 @@ export default function ChatPage() {
                     )}
 
                     <div className={`w-full max-w-[800px] ${messages.length > 0 ? "mx-auto sticky bottom-0 pb-2 pt-2 shrink-0 bg-white" : ""}`}>
+                        {files.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-3">
+                                {files.map((file, index) => (
+                                    <AttachmentPreview
+                                        key={`${file.name}-${file.lastModified}-${file.size}-${index}`}
+                                        file={file}
+                                        onRemove={() => setFiles((current) => current.filter((_, currentIndex) => currentIndex !== index))}
+                                    />
+                                ))}
+                            </div>
+                        )}
                         <div className="flex items-center bg-[#f4f4f4] rounded-[24px] px-3 py-3 border border-transparent focus-within:bg-white focus-within:shadow-[0_2px_15px_rgba(0,0,0,0.08)] focus-within:border-[#e5e5e5] transition-all duration-200">
                             <label className="p-2 ml-1 mr-1 hover:bg-[#e8e8e8] rounded-full transition-colors text-gray-600 cursor-pointer flex items-center">
                                 <Plus className="w-[20px] h-[20px]" />
-                                {files.length > 0 && (
-                                    <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                        📎 {files.length === 1 ? files[0].name : `${files.length} files`}
-                                    </div>
-                                )}
                                 <input
                                     ref={fileInputRef}
                                     type="file"
                                     multiple
                                     className="hidden"
                                     onChange={(e) => {
-                                        if (e.target.files) {
-                                            setFiles(Array.from(e.target.files));
+                                        if (e.currentTarget.files) {
+                                            const selectedFiles = Array.from(e.currentTarget.files);
+                                            setFiles((current) => [...current, ...selectedFiles]);
+                                            e.currentTarget.value = "";
                                         }
                                     }}
                                 />
@@ -343,6 +359,80 @@ export default function ChatPage() {
             </div>
         </div>
     );
+}
+
+function AttachmentPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewFailed, setPreviewFailed] = useState(false);
+    const isImage = isImageFile(file);
+    const PreviewIcon = isImage ? ImageIcon : getFileIcon(file);
+    const fileExtension = file.name.split(".").pop()?.toUpperCase();
+
+    useEffect(() => {
+        if (!isImage) return;
+
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
+        setPreviewFailed(false);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [file, isImage]);
+
+    return (
+        <div className="relative flex h-[88px] w-[220px] items-center gap-3 rounded-xl border border-gray-200 bg-white p-2.5 pr-9 shadow-sm">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-gray-500">
+                {isImage && previewUrl && !previewFailed ? (
+                    <img
+                        src={previewUrl}
+                        alt={file.name}
+                        className="h-full w-full object-cover"
+                        onError={() => setPreviewFailed(true)}
+                    />
+                ) : (
+                    <div className="flex flex-col items-center justify-center gap-1">
+                        <PreviewIcon className="h-7 w-7" strokeWidth={1.7} />
+                        <span className="max-w-14 truncate text-[9px] font-semibold uppercase tracking-wide">
+                            {fileExtension && fileExtension !== file.name.toUpperCase() ? fileExtension : "FILE"}
+                        </span>
+                    </div>
+                )}
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-medium text-gray-800" title={file.name}>{file.name}</div>
+                <div className="mt-1 text-[11px] text-gray-500">{formatFileSize(file.size)}</div>
+            </div>
+            <button
+                type="button"
+                onClick={onRemove}
+                aria-label={`Remove ${file.name}`}
+                title={`Remove ${file.name}`}
+                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+                <X className="h-3.5 w-3.5" />
+            </button>
+        </div>
+    );
+}
+
+function isImageFile(file: File) {
+    return file.type.startsWith("image/") || /\.(avif|bmp|gif|jpe?g|png|svg|webp|heic|heif|tiff?)$/i.test(file.name);
+}
+
+function getFileIcon(file: File) {
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+
+    if (file.type.startsWith("audio/") || ["aac", "m4a", "mp3", "ogg", "wav", "flac"].includes(extension)) return Music2;
+    if (file.type.startsWith("video/") || ["avi", "mkv", "mov", "mp4", "webm"].includes(extension)) return Film;
+    if (["csv", "ods", "xls", "xlsx"].includes(extension)) return FileSpreadsheet;
+    if (["7z", "gz", "rar", "tar", "zip"].includes(extension)) return FileArchive;
+    if (["c", "cpp", "css", "html", "java", "js", "json", "jsx", "py", "ts", "tsx", "xml"].includes(extension)) return FileCode;
+    if (extension) return FileText;
+    return FileIcon;
+}
+
+function formatFileSize(size: number) {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function ChatBubble({ msg, isTyping, onTypingComplete }: { msg: any; isTyping: boolean; onTypingComplete: () => void }) {
