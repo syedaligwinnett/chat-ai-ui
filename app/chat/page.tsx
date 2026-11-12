@@ -24,6 +24,7 @@ import {
     Check,
     Loader2,
     Camera,
+    Menu,
     File as FileIcon,
     FileArchive,
     FileCode,
@@ -40,6 +41,8 @@ export default function ChatPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [typingMessageId, setTypingMessageId] = useState<number | null>(null);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +53,14 @@ export default function ChatPage() {
     const addFiles = (selectedFiles: FileList | null) => {
         if (!selectedFiles?.length) return;
         setFiles((current) => [...current, ...Array.from(selectedFiles)]);
+    };
+
+    const toggleSidebar = () => {
+        if (window.matchMedia("(min-width: 768px)").matches) {
+            setIsDesktopSidebarOpen((isOpen) => !isOpen);
+            return;
+        }
+        setIsMobileSidebarOpen((isOpen) => !isOpen);
     };
 
     const adjustHeight = () => {
@@ -170,6 +181,7 @@ export default function ChatPage() {
     const startNewChat = () => {
         abortControllerRef.current?.abort();
         abortControllerRef.current = null;
+        setIsMobileSidebarOpen(false);
         setMessages([]);
         setInput("");
         setFiles([]);
@@ -184,9 +196,20 @@ export default function ChatPage() {
     };
 
     return (
-        <div className="flex h-screen bg-white text-[#0f0f0f] font-sans antialiased">
+        <div className="relative flex h-screen h-[100dvh] w-full overflow-hidden bg-white font-sans antialiased text-[#0f0f0f]">
+            {isMobileSidebarOpen && (
+                <button
+                    type="button"
+                    aria-label="Close navigation menu"
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    className="fixed inset-0 z-20 bg-black/35 md:hidden"
+                />
+            )}
             {/* Sidebar */}
-            <div className="flex flex-col w-[260px] bg-[#f9f9f9] border-r border-[#ececec] h-full justify-between flex-shrink-0">
+            <div
+                id="chat-sidebar"
+                className={`fixed inset-y-0 left-0 z-30 flex h-full w-[280px] max-w-[85vw] flex-col justify-between overflow-y-auto border-r border-[#ececec] bg-[#f9f9f9] shadow-xl transition-all duration-200 md:relative md:inset-auto md:z-auto md:h-full md:max-w-none md:translate-x-0 md:shadow-none ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} ${isDesktopSidebarOpen ? "md:flex md:w-[260px]" : "md:w-0 md:overflow-hidden md:border-0"}`}
+            >
 
                 {/* Top section */}
                 <div className="flex flex-col">
@@ -195,7 +218,12 @@ export default function ChatPage() {
                         <button className="p-2 hover:bg-gray-200/50 rounded-lg text-gray-700 transition-colors">
                             <Aperture className="w-5 h-5" />
                         </button>
-                        <button className="p-2 hover:bg-gray-200/50 rounded-lg text-gray-700 transition-colors">
+                        <button
+                            type="button"
+                            aria-label="Collapse sidebar"
+                            onClick={toggleSidebar}
+                            className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-200/50"
+                        >
                             <PanelLeftClose className="w-5 h-5" />
                         </button>
                     </div>
@@ -261,17 +289,26 @@ export default function ChatPage() {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col relative h-full min-w-0">
+            <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
                 {/* Top Bar */}
-                <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-10">
-                    <div className="flex items-center">
-                        <button className="flex items-center gap-1 text-[18px] font-bold text-[#0f0f0f] hover:bg-gray-100 rounded-lg px-2 py-1 transition-colors">
-                            Gwinnett Psychiatry - AI Assistant
-                            <ChevronDown className="w-[18px] h-[18px] text-gray-500 ml-1" strokeWidth={2.5} />
+                <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-white px-2 py-2 sm:px-4 sm:py-3">
+                    <div className="flex min-w-0 items-center gap-1">
+                        <button
+                            type="button"
+                            aria-label="Toggle navigation menu"
+                            aria-controls="chat-sidebar"
+                            onClick={toggleSidebar}
+                            className="shrink-0 rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                        <button className="flex min-w-0 items-center gap-1 rounded-lg px-1 py-1 text-left text-sm font-bold text-[#0f0f0f] transition-colors hover:bg-gray-100 sm:px-2 sm:text-base md:text-lg">
+                            <span className="truncate">Gwinnett Psychiatry - AI Assistant</span>
+                            <ChevronDown className="ml-1 h-[18px] w-[18px] shrink-0 text-gray-500" strokeWidth={2.5} />
                         </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="px-3 py-2 text-[14px] font-medium text-gray-800">
+                    <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                        <div className="hidden px-3 py-2 text-[14px] font-medium text-gray-800 sm:block">
                             Welcome! Admin
                         </div>
                         <button
@@ -279,7 +316,7 @@ export default function ChatPage() {
                                 localStorage.removeItem("token");
                                 router.push("/login");
                             }}
-                            className="px-4 py-1.5 text-[13px] font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors border border-red-100"
+                            className="whitespace-nowrap rounded-full border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 sm:px-4 sm:text-[13px]"
                         >
                             Sign out
                         </button>
@@ -287,11 +324,11 @@ export default function ChatPage() {
                 </div>
 
                 {/* Content Area */}
-                <div id="chat-scroll-container" className={`flex-1 flex flex-col ${messages.length === 0 ? "items-center justify-center pb-[10vh]" : ""} overflow-y-auto px-4 scroll-smooth`}>
+                <div id="chat-scroll-container" className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-3 scroll-smooth sm:px-4 ${messages.length === 0 ? "items-center justify-center pb-[8vh]" : ""}`}>
                     {messages.length === 0 ? (
-                        <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-[#0f0f0f] tracking-tight">What are you working on?</h1>
+                        <h1 className="mb-6 px-3 text-center text-2xl font-semibold tracking-tight text-[#0f0f0f] sm:mb-8 sm:text-3xl md:text-4xl">What are you working on?</h1>
                     ) : (
-                        <div className="flex-1 w-full max-w-[800px] mx-auto py-6 space-y-4">
+                        <div className="mx-auto w-full max-w-[800px] flex-1 space-y-4 py-4 sm:py-6">
                             {messages.map((msg, i) => (
                                 <ChatBubble
                                     key={i}
@@ -313,7 +350,7 @@ export default function ChatPage() {
                         </div>
                     )}
 
-                    <div className={`w-full max-w-[800px] ${messages.length > 0 ? "mx-auto sticky bottom-0 pb-2 pt-2 shrink-0 bg-white" : ""}`}>
+                    <div className={`w-full max-w-[800px] ${messages.length > 0 ? "sticky bottom-0 mx-auto shrink-0 bg-white pb-2 pt-2" : ""}`}>
                         {files.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-3">
                                 {files.map((file, index) => (
@@ -325,8 +362,8 @@ export default function ChatPage() {
                                 ))}
                             </div>
                         )}
-                        <div className="flex items-center bg-[#f4f4f4] rounded-[24px] px-3 py-3 border border-transparent focus-within:bg-white focus-within:shadow-[0_2px_15px_rgba(0,0,0,0.08)] focus-within:border-[#e5e5e5] transition-all duration-200">
-                            <label className="p-2 ml-1 mr-1 hover:bg-[#e8e8e8] rounded-full transition-colors text-gray-600 cursor-pointer flex items-center">
+                        <div className="flex min-w-0 items-center rounded-[24px] border border-transparent bg-[#f4f4f4] px-2 py-2 transition-all duration-200 focus-within:border-[#e5e5e5] focus-within:bg-white focus-within:shadow-[0_2px_15px_rgba(0,0,0,0.08)] sm:px-3 sm:py-3">
+                            <label className="ml-0.5 mr-0.5 flex shrink-0 cursor-pointer items-center rounded-full p-2 text-gray-600 transition-colors hover:bg-[#e8e8e8] sm:ml-1 sm:mr-1">
                                 <Plus className="w-[20px] h-[20px]" />
                                 <input
                                     ref={fileInputRef}
@@ -344,7 +381,7 @@ export default function ChatPage() {
                                 onClick={() => cameraInputRef.current?.click()}
                                 aria-label="Take a photo"
                                 title="Take a photo"
-                                className="mr-2 flex items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-[#e8e8e8]"
+                                className="mr-1 flex shrink-0 items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-[#e8e8e8] sm:mr-2"
                             >
                                 <Camera className="h-5 w-5" />
                             </button>
@@ -373,13 +410,13 @@ export default function ChatPage() {
                                     }
                                 }}
                                 placeholder="Ask anything"
-                                className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-[16px] text-black placeholder:text-gray-500 resize-none max-h-[200px] overflow-y-auto"
+                                className="min-w-0 flex-1 resize-none border-none bg-transparent px-1.5 py-1 text-base text-black outline-none placeholder:text-gray-500 max-h-[160px] overflow-y-auto sm:max-h-[200px] sm:px-2"
                             />
-                            <button onClick={sendMessage} disabled={!isProcessing && !input.trim()} aria-label={isProcessing ? "Stop response" : "Submit message"} className="pl-3 pr-4 py-2 mr-1 bg-black text-white border border-transparent rounded-full flex items-center justify-center shadow-sm hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed">
+                            <button onClick={sendMessage} disabled={!isProcessing && !input.trim()} aria-label={isProcessing ? "Stop response" : "Submit message"} className="mr-0.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent bg-black py-2 pl-2.5 pr-3 text-white shadow-sm transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 sm:mr-1 sm:gap-2 sm:pl-3 sm:pr-4">
                                 {isProcessing ? (
-                                    <><span className="text-[14px] font-medium">Stop</span><Square className="w-[14px] h-[14px] fill-current" /></>
+                                    <><span className="text-xs font-medium sm:text-[14px]">Stop</span><Square className="h-[14px] w-[14px] fill-current" /></>
                                 ) : (
-                                    <><span className="text-[14px] font-medium">Submit</span><Send className="w-[16px] h-[16px]" /></>
+                                    <><span className="text-xs font-medium sm:text-[14px]">Submit</span><Send className="h-4 w-4" /></>
                                 )}
                             </button>
                         </div>
@@ -387,8 +424,8 @@ export default function ChatPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="pb-4 pt-2 text-center w-full bg-white z-10 shrink-0">
-                    <p className="text-[12px] text-gray-500">
+                <div className="z-10 w-full shrink-0 bg-white px-2 pb-2 pt-1 text-center sm:px-3 sm:pb-4 sm:pt-2">
+                    <p className="text-[10px] text-gray-500 sm:text-[12px]">
                         By messaging ChatGPT, an AI chatbot, you agree to our <a href="#" className="underline text-gray-600 hover:text-black">Terms</a> and have read our <a href="#" className="underline text-gray-600 hover:text-black">Privacy Policy</a>.
                     </p>
                 </div>
