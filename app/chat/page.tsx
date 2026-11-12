@@ -23,6 +23,7 @@ import {
     Copy,
     Check,
     Loader2,
+    Camera,
     File as FileIcon,
     FileArchive,
     FileCode,
@@ -42,8 +43,14 @@ export default function ChatPage() {
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const nextMessageIdRef = useRef(0);
+
+    const addFiles = (selectedFiles: FileList | null) => {
+        if (!selectedFiles?.length) return;
+        setFiles((current) => [...current, ...Array.from(selectedFiles)]);
+    };
 
     const adjustHeight = () => {
         const textarea = textareaRef.current;
@@ -93,7 +100,6 @@ export default function ChatPage() {
 
         // Clear input immediately for better UX
         setInput("");
-        setFiles([]);
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
         }
@@ -118,18 +124,31 @@ export default function ChatPage() {
                     Authorization: `Bearer ${token}`,
                 },
                 signal: controller.signal,
+                timeout: 210000,
             });
 
             if (controller.signal.aborted) return;
+            const reply = res.data?.reply;
+            if (typeof reply !== "string" || !reply.trim()) {
+                throw new Error("The server returned an empty reply. Check whether it can read this attachment format.");
+            }
+
+            setFiles((pendingFiles) => pendingFiles.filter((file) => !currentFiles.includes(file)));
             const messageId = nextMessageIdRef.current++;
-            const botMessage = { role: "bot", text: res.data.reply, isNew: true, id: messageId };
+            const botMessage = { role: "bot", text: reply, isNew: true, id: messageId };
             responseIsTyping = true;
             setMessages((prev) => [...prev, botMessage]);
             setTypingMessageId(messageId);
         } catch (error) {
             if (!controller.signal.aborted) {
                 console.error("Error sending message:", error);
-                setIsProcessing(false);
+                const serverMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+                const errorMessage = typeof serverMessage === "string"
+                    ? serverMessage
+                    : axios.isAxiosError(error) && (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT")
+                        ? "The request timed out while the server was processing your attachment. Try a smaller file or try again."
+                        : "The server could not process this request. Check that the backend is running and supports this file format.";
+                setMessages((prev) => [...prev, { role: "bot", text: `I couldn't process that request. ${errorMessage}` }]);
             }
         } finally {
             if (!responseIsTyping && abortControllerRef.current === controller) {
@@ -315,14 +334,31 @@ export default function ChatPage() {
                                     multiple
                                     className="hidden"
                                     onChange={(e) => {
-                                        if (e.currentTarget.files) {
-                                            const selectedFiles = Array.from(e.currentTarget.files);
-                                            setFiles((current) => [...current, ...selectedFiles]);
-                                            e.currentTarget.value = "";
-                                        }
+                                        addFiles(e.currentTarget.files);
+                                        e.currentTarget.value = "";
                                     }}
                                 />
                             </label>
+                            <button
+                                type="button"
+                                onClick={() => cameraInputRef.current?.click()}
+                                aria-label="Take a photo"
+                                title="Take a photo"
+                                className="mr-2 flex items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-[#e8e8e8]"
+                            >
+                                <Camera className="h-5 w-5" />
+                            </button>
+                            <input
+                                ref={cameraInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                className="hidden"
+                                onChange={(e) => {
+                                    addFiles(e.currentTarget.files);
+                                    e.currentTarget.value = "";
+                                }}
+                            />
                             <textarea
                                 ref={textareaRef}
                                 rows={1}
