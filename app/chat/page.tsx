@@ -43,17 +43,78 @@ export default function ChatPage() {
     const [typingMessageId, setTypingMessageId] = useState<number | null>(null);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [cameraError, setCameraError] = useState("");
     const router = useRouter();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
+    const cameraVideoRef = useRef<HTMLVideoElement>(null);
+    const cameraStreamRef = useRef<MediaStream | null>(null);
+    const cameraRequestActiveRef = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const nextMessageIdRef = useRef(0);
 
-    const addFiles = (selectedFiles: FileList | null) => {
+    const addFiles = (selectedFiles: FileList | File[] | null) => {
         if (!selectedFiles?.length) return;
         setFiles((current) => [...current, ...Array.from(selectedFiles)]);
     };
+
+    const stopCamera = () => {
+        cameraRequestActiveRef.current = false;
+        cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+        cameraStreamRef.current = null;
+        setIsCameraOpen(false);
+    };
+
+    const openCamera = async () => {
+        // Keep the native capture control on phones; desktop browsers otherwise show a file picker.
+        if (window.matchMedia("(max-width: 767px)").matches) {
+            cameraInputRef.current?.click();
+            return;
+        }
+        cameraRequestActiveRef.current = true;
+        setCameraError("");
+        setIsCameraOpen(true);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            if (!cameraRequestActiveRef.current) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
+            }
+            cameraStreamRef.current = stream;
+            if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream;
+        } catch {
+            if (cameraRequestActiveRef.current) {
+                setCameraError("Camera access was denied or no camera is available. Check your browser permissions and try again.");
+            }
+        }
+    };
+
+    const captureCameraPhoto = () => {
+        const video = cameraVideoRef.current;
+        if (!video || !video.videoWidth || !video.videoHeight) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d")?.drawImage(video, 0, 0);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                addFiles([new File([blob], `camera-${Date.now()}.jpg`, { type: "image/jpeg" })]);
+                stopCamera();
+            }
+        }, "image/jpeg", 0.92);
+    };
+
+    useEffect(() => () => {
+        cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    }, []);
+
+    useEffect(() => {
+        if (isCameraOpen && cameraVideoRef.current && cameraStreamRef.current) {
+            cameraVideoRef.current.srcObject = cameraStreamRef.current;
+        }
+    }, [isCameraOpen]);
 
     const toggleSidebar = () => {
         if (window.matchMedia("(min-width: 768px)").matches) {
@@ -378,7 +439,7 @@ export default function ChatPage() {
                             </label>
                             <button
                                 type="button"
-                                onClick={() => cameraInputRef.current?.click()}
+                                onClick={openCamera}
                                 aria-label="Take a photo"
                                 title="Take a photo"
                                 className="mr-1 flex shrink-0 items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-[#e8e8e8] sm:mr-2"
@@ -430,6 +491,24 @@ export default function ChatPage() {
                     </p>
                 </div>
             </div>
+            {isCameraOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Take a photo">
+                    <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                            <h2 className="font-medium">Take a photo</h2>
+                            <button type="button" onClick={stopCamera} aria-label="Close camera" className="rounded-full p-2 text-gray-600 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+                        </div>
+                        {cameraError ? (
+                            <p className="p-6 text-sm text-red-600">{cameraError}</p>
+                        ) : (
+                            <video ref={cameraVideoRef} autoPlay playsInline className="max-h-[70vh] w-full bg-black object-contain" />
+                        )}
+                        <div className="flex justify-end border-t border-gray-200 p-3">
+                            <button type="button" onClick={captureCameraPhoto} disabled={Boolean(cameraError)} className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50">Capture photo</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
